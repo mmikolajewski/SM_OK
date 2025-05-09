@@ -3,7 +3,7 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        String filename = "src/points_01.txt";
+        String filename = "src/txt/berlin52.txt";
         TSP tsp = new TSP();
         List<TSP.Point> points = TSP.readPoints(filename);
 
