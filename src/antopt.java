@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.*;
 
-class AntColonyTSP {
+class antopt {
 
     static class Edge {
         int to;
@@ -99,7 +99,27 @@ class AntColonyTSP {
         return dist;
     }
 
-    static void updatePheromones(List<List<Integer>> allPaths, List<Double> lengths, double evaporation, double Q) {
+    static List<Integer> twoOpt(List<Integer> path) {
+        boolean improvement = true;
+        while (improvement) {
+            improvement = false;
+            for (int i = 1; i < path.size() - 2; i++) {
+                for (int j = i + 1; j < path.size() - 1; j++) {
+                    double delta = -euclidean(coords.get(path.get(i - 1)), coords.get(path.get(i)))
+                            - euclidean(coords.get(path.get(j)), coords.get(path.get(j + 1)))
+                            + euclidean(coords.get(path.get(i - 1)), coords.get(path.get(j)))
+                            + euclidean(coords.get(path.get(i)), coords.get(path.get(j + 1)));
+                    if (delta < -1e-6) {
+                        Collections.reverse(path.subList(i, j + 1));
+                        improvement = true;
+                    }
+                }
+            }
+        }
+        return path;
+    }
+
+    static void updatePheromones(List<List<Integer>> allPaths, List<Double> lengths, double evaporation, double Q, List<Integer> bestPath, double bestLength) {
         for (List<Edge> edges : graph.values()) {
             for (Edge e : edges) {
                 e.pheromone *= (1.0 - evaporation);
@@ -120,15 +140,28 @@ class AntColonyTSP {
                 }
             }
         }
+
+        // Dodanie feromonu elitarnego dla najlepszej ścieżki
+        double eliteContrib = Q * 5.0 / bestLength;
+        for (int j = 0; j < bestPath.size(); j++) {
+            int from = bestPath.get(j);
+            int to = bestPath.get((j + 1) % bestPath.size());
+            for (Edge edge : graph.get(from)) {
+                if (edge.to == to) {
+                    edge.pheromone += eliteContrib;
+                    break;
+                }
+            }
+        }
     }
 
     public static void main(String[] args) throws IOException {
         readCoords("src/txt/bier127.txt");
         buildGraph();
 
-        int n_ants = 1000;
-        int n_iterations = 1000;
-        double alpha = 1.0, beta = 2.0, evaporation = 0.5, Q = 100.0;
+        int n_ants = 10000;
+        int n_iterations = 100;
+        double alpha = 1.2, beta = 4.0, evaporation = 0.1, Q = 500.0;
 
         List<Integer> bestPath = null;
         double bestLength = Double.POSITIVE_INFINITY;
@@ -141,15 +174,16 @@ class AntColonyTSP {
                 int start = new Random().nextInt(coords.size());
                 List<Integer> path = buildPath(start, alpha, beta);
                 if (path.size() != coords.size()) continue;
+                path = twoOpt(path);
                 double len = totalLength(path);
                 allPaths.add(path);
                 lengths.add(len);
                 if (len < bestLength) {
                     bestLength = len;
-                    bestPath = path;
+                    bestPath = new ArrayList<>(path);
                 }
             }
-            updatePheromones(allPaths, lengths, evaporation, Q);
+            updatePheromones(allPaths, lengths, evaporation, Q, bestPath, bestLength);
             System.out.printf("Iteracja %d: najlepsza długość = %.2f\n", it + 1, bestLength);
         }
 

@@ -1,7 +1,7 @@
 import java.io.IOException;
 import java.util.List;
 
-public class Main {
+public class Greedy {
     public static void main(String[] args) throws IOException {
         String filename = "src/txt/berlin52.txt";
         TSP tsp = new TSP();
